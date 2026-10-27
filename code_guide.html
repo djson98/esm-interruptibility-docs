@@ -460,7 +460,6 @@
           <h3>세션과 오디오</h3>
           <div class="file-grid">
             <article class="file-card" data-search="SessionRunner 질문 q1 q2 녹음 저장 업로드 분기"><span class="path">session/SessionRunner.kt</span><h4>실험 순서 지휘</h4><p>시작음 → Q1/Q2 → 재시도·중단 → 저장 → 종료음 → 업로드 순서를 지휘합니다.</p></article>
-            <article class="file-card" data-search="StopIntentDetector 그만 중단 감지"><span class="path">session/StopIntentDetector.kt</span><h4>중단 의도 판정</h4><p>실험 프로토콜에 정한 “그만” 포함 여부만 검사합니다.</p></article>
             <article class="file-card" data-search="AudioRecorder 녹음 pcm wav vad 침묵"><span class="path">audio/AudioRecorder.kt</span><h4>음성 녹음</h4><p>PCM 음성을 WAV로 기록하며, Silero VAD로 발화 시작과 침묵 종료를 판단합니다.</p></article>
             <article class="file-card" data-search="PromptAudioPlayer mp3 질문 재생"><span class="path">audio/PromptAudioPlayer.kt</span><h4>안내 음원 재생</h4><p>res/raw의 시작음, 질문, 응답 시작음, 종료음을 순서대로 재생합니다.</p></article>
           </div>
@@ -468,7 +467,7 @@
         <div class="file-group" data-group="로컬 데이터">
           <h3>로컬 데이터 · Room</h3>
           <div class="file-grid">
-            <article class="file-card" data-search="SessionEntity sessions room 테이블 오디오 transcript outcome"><span class="path">data/local/SessionEntity.kt</span><h4>세션 한 행의 모양</h4><p>Q1·Q2 오디오, 전사, 시도 횟수, 결과와 중단 이유를 정의합니다.</p></article>
+            <article class="file-card" data-search="SessionEntity sessions room 테이블 오디오 transcript outcome"><span class="path">data/local/SessionEntity.kt</span><h4>세션 한 행의 모양</h4><p>Q1·Q2 오디오, 전사, 시도 횟수와 결과를 정의합니다.</p></article>
             <article class="file-card" data-search="DeviceEntity devices room 스케줄 그룹 역할 별칭"><span class="path">data/local/DeviceEntity.kt</span><h4>기기 한 행의 모양</h4><p>기기 별칭·그룹·역할과 다음 스케줄, 마지막 하트비트 시각을 정의합니다.</p></article>
             <article class="file-card" data-search="DAO database query insert update SQL Room"><span class="path">data/local/*Dao.kt</span><h4>DB 직접 접근</h4><p>Room이 구현해 줄 INSERT, UPDATE, SELECT 명령을 선언합니다.</p></article>
             <article class="file-card" data-search="Repository 레포 dao 감싸기 저장 조회"><span class="path">data/*Repository.kt</span><h4>DB 사용 창구</h4><p>나머지 코드가 SQL이나 DAO 세부사항을 몰라도 되도록 의미 있는 함수로 감쌉니다.</p></article>
@@ -539,14 +538,6 @@
             )
         }
 
-        if (StopIntentDetector.isStopIntent(answer.transcript)) {
-            return CollectedSession(
-                answers = answers,
-                outcome = SessionOutcome.STOPPED_BY_USER,
-                stoppedAtQuestion = question.number,
-                stopReason = recordResponse(R.raw.stop_reason),
-            )
-        }
     }
 
     return CollectedSession(
@@ -554,7 +545,7 @@
         outcome = SessionOutcome.COMPLETED,
     )
 }</code></pre>
-        <div class="panel code-note"><h3>읽는 법</h3><ul><li><code>QUESTIONS</code>에는 Q1, Q2가 들어 있습니다.</li><li>답이 없으면 그 자리에서 <code>NO_RESPONSE</code>로 종료합니다.</li><li>“그만”이면 Q2로 가지 않고 중단 이유를 한 번 더 녹음합니다.</li><li>두 질문을 통과하면 <code>COMPLETED</code>입니다.</li></ul></div>
+        <div class="panel code-note"><h3>읽는 법</h3><ul><li><code>QUESTIONS</code>에는 Q1, Q2가 들어 있습니다.</li><li>답이 없으면 그 자리에서 <code>NO_RESPONSE</code>로 종료합니다.</li><li>“그만”과 “아니요”도 일반 응답으로 저장합니다. 별도의 음성 중단 질문은 없습니다.</li><li>두 질문을 통과하면 <code>COMPLETED</code>입니다.</li></ul></div>
       </article>
 
       <article class="snippet-panel" id="snippet-retry">
@@ -650,7 +641,7 @@
     <section id="data">
       <div class="section-head"><h2>데이터는 어디에 저장되나</h2><p>폰은 장애에 대비해 원본을 보존하고, 서버는 여러 폰의 결과를 한곳에서 조회합니다.</p></div>
       <div class="data-grid">
-        <div class="panel data-box"><h3>폰 · Room Database</h3><p>앱이 오프라인이거나 서버 요청이 실패해도 기기 안에 남는 데이터입니다.</p><div class="table-list"><div class="table-row"><b>sessions</b><span>Q1·Q2 WAV, 전사, 시도, outcome, 중단 이유</span></div><div class="table-row"><b>devices</b><span>별칭, 그룹, 역할, 다음 일정, 마지막 heartbeat</span></div></div></div>
+        <div class="panel data-box"><h3>폰 · Room Database</h3><p>앱이 오프라인이거나 서버 요청이 실패해도 기기 안에 남는 데이터입니다.</p><div class="table-list"><div class="table-row"><b>sessions</b><span>Q1·Q2 WAV, 전사, 시도, outcome</span></div><div class="table-row"><b>devices</b><span>별칭, 그룹, 역할, 다음 일정, 마지막 heartbeat</span></div></div></div>
         <div class="panel data-box"><h3>서버 · SQLite</h3><p>연구자가 대시보드에서 여러 기기의 상태와 세션을 함께 보는 데이터입니다.</p><div class="table-list"><div class="table-row"><b>sessions</b><span>업로드된 세션과 오디오 BLOB</span></div><div class="table-row"><b>devices</b><span>관리자 설정, 연결 상태, 일정 상태</span></div><div class="table-row"><b>group_schedule_controls</b><span>그룹별 연속 테스트 허용 여부</span></div></div></div>
       </div>
     </section>
@@ -707,22 +698,9 @@
           ["알람이 화면을 연다", "Receiver가 scheduleId를 MainActivity로 전달하고 세션을 시작합니다.", "EsmAlarmReceiver.kt"],
           ["시작음과 Q1을 재생한다", "질문 뒤 응답 시작음을 재생한 다음 녹음을 시작합니다.", "SessionRunner.kt · recordResponse()"],
           ["발화가 끝나면 녹음을 닫는다", "Silero VAD가 발화 후 침묵을 감지해 최대 시간 전에 WAV를 완성합니다.", "AudioRecorder.kt · recordUntilSilence()"],
-          ["Q1을 전사하고 Q2를 반복한다", "Q1이 유효하고 ‘그만’이 아니므로 같은 루프로 Q2를 수행합니다.", "SessionRunner.kt · collectResponses()"],
+          ["Q1을 전사하고 Q2를 반복한다", "Q1이 유효하면 같은 루프로 Q2를 수행합니다. “그만”도 일반 응답입니다.", "SessionRunner.kt · collectResponses()"],
           ["Room 저장 후 서버에 올린다", "두 오디오·전사·시도 횟수와 COMPLETED 결과를 로컬과 서버에 남깁니다.", "SessionRepository.kt → SessionUploadClient.kt"],
           ["리더가 다음 일정을 만든다", "현재 일정을 완료하고 리더만 30–90초 뒤 그룹 일정을 생성합니다.", "ScheduleSyncManager.kt · completeAndScheduleNext()"]
-        ]
-      },
-      {
-        id: "stop",
-        label: "‘그만’ 중단",
-        title: "Q1 또는 Q2에서 ‘그만’이라고 했을 때",
-        summary: "문장에 ‘그만’이 포함되면 다음 질문으로 가지 않고 중단 이유를 녹음합니다.",
-        steps: [
-          ["질문 응답을 전사한다", "녹음 파일을 서버에 보내 한국어 전사 문자열을 받습니다.", "TranscriptionClient.kt"],
-          ["중단 단어를 검사한다", "실험 프로토콜대로 transcript.contains(\"그만\")만 판정합니다.", "StopIntentDetector.kt"],
-          ["질문 루프를 즉시 빠져나온다", "Q1이면 Q2를 생략하고, Q2이면 그대로 질문 단계를 끝냅니다.", "SessionRunner.kt · collectResponses()"],
-          ["중단 이유를 한 번 녹음한다", "stop_reason 안내 음원을 재생하고 이유의 오디오·전사를 수집합니다.", "SessionRunner.kt · recordResponse()"],
-          ["STOPPED_BY_USER로 저장한다", "stoppedAtQuestion과 stopReason까지 Room과 서버에 저장합니다.", "SessionEntity.kt · sessions.py"]
         ]
       },
       {
